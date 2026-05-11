@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     # HTTP 서버 시작
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("127.0.0.1", PORT), QuietHandler) as httpd:
+    with socketserver.TCPServer(("0.0.0.0", PORT), QuietHandler) as httpd:
         print(f"\n{'='*50}")
         print(f"  MS Build 2026 Session Navigator")
         print(f"  http://localhost:{PORT}")
