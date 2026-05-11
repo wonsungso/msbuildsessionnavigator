@@ -39,30 +39,30 @@ cd msbuildsessionnavigator
 ### 서버 실행
 
 ```bash
-bash run.sh
+sudo bash run.sh
 ```
 
 - Python / pip / requests 설치 여부를 자동 확인하고 필요 시 설치합니다.
-- 서버가 `http://localhost:5500` 에서 기동됩니다.
+- 서버가 `http://localhost` 에서 기동됩니다. (80 포트는 특권 포트이므로 `sudo` 필요)
 - 백그라운드 스레드가 24시간마다 세션 데이터와 한국어 번역을 갱신합니다.
 - PID 파일(`.server.pid`)로 중복 실행을 방지합니다.
 
 ### 서버 종료
 
 ```bash
-bash stop.sh
+sudo bash stop.sh
 ```
 
 ### 서버 재시작
 
 ```bash
-bash restart.sh
+sudo bash restart.sh
 ```
 
 ### 브라우저에서 열기
 
 ```
-http://localhost:5500
+http://localhost
 ```
 
 ## 파일 구조
