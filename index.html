@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MS Build 2026 – Session Navigator</title>
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --blue: #0078d4;
+      --blue-dark: #005a9e;
+      --blue-light: #e8f4fd;
+      --purple: #6264a7;
+      --green: #107c10;
+      --orange: #ca5010;
+      --red: #a4262c;
+      --bg: #f3f2f1;
+      --surface: #ffffff;
+      --border: #e1dfdd;
+      --text: #201f1e;
+      --text2: #605e5c;
+      --text3: #a19f9d;
+      --header-h: 58px;
+      --banner-h: 62px;
+      --filter-bar-h: 52px;
+      --radius: 8px;
+      --shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    .hdr {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--header-h);
+      background: linear-gradient(135deg, #0a2d4e 0%, #0078d4 55%, #6264a7 100%);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; box-shadow: var(--shadow);
+    }
+    .hdr-left { display: flex; align-items: center; gap: 14px; }
+    .hdr-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; cursor: pointer;
+      font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -.3px;
+    }
+    .hdr-logo:hover { opacity: .85; }
+    .hdr-logo .ms-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+    .hdr-logo em { color: #7ecfff; font-style: normal; }
+    .hdr-sub { color: rgba(255,255,255,.65); font-size: 12px;
+               border-left: 1px solid rgba(255,255,255,.3); padding-left: 12px; }
+    .hdr-right { display: flex; align-items: center; gap: 14px; }
+
+    .hdr-count { font-size: 12px; color: rgba(255,255,255,.7);
+                 background: rgba(255,255,255,.12); padding: 4px 12px; border-radius: 20px; }
+
+    .btn-export {
+      border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.12);
+      color: #fff; font-size: 12px; font-weight: 600; padding: 5px 14px;
+      border-radius: 20px; cursor: pointer; transition: all .2s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-export:hover { background: rgba(255,255,255,.28); border-color: rgba(255,255,255,.7); }
+    .btn-export:active { transform: scale(.96); }
+
+    /* Language toggle */
+    .lang-wrap { display: flex; background: rgba(255,255,255,.15);
+                 border-radius: 20px; padding: 3px; gap: 2px; }
+    .lang-btn { border: none; background: transparent; color: rgba(255,255,255,.75);
+                font-size: 12px; font-weight: 600; padding: 4px 13px; border-radius: 16px;
+                transition: all .2s; }
+    .lang-btn.on { background: #fff; color: var(--blue); }
+    .lang-btn:hover:not(.on) { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* ─── Event Banner ──────────────────────────────────────────────── */
+    .evt-banner {
+      position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 190;
+      height: var(--banner-h);
+      background: linear-gradient(100deg, #041d35 0%, #003365 45%, #1a1040 100%);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 22px; border-bottom: 1px solid rgba(255,255,255,.1);
+      gap: 16px;
+    }
+    .evt-left { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .evt-info { display: flex; flex-direction: column; gap: 2px; }
+    .evt-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.55); letter-spacing: .6px; text-transform: uppercase; }
+    .evt-date  { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); }
+    .evt-reg {
+      display: inline-flex; align-items: center;
+      padding: 7px 18px; border-radius: 20px; white-space: nowrap;
+      background: var(--blue); color: #fff;
+      font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(120,200,255,.3);
+      transition: background .2s, transform .15s, box-shadow .15s;
+      box-shadow: 0 0 14px rgba(0,120,212,.4);
+    }
+    .evt-reg:hover { background: #005fa3; transform: translateY(-1px); box-shadow: 0 2px 18px rgba(0,120,212,.6); }
+    .evt-cd { display: flex; align-items: center; gap: 4px; }
+    .cd-unit { display: flex; flex-direction: column; align-items: center; min-width: 48px;
+               background: rgba(255,255,255,.07); border-radius: 7px; padding: 5px 4px 4px; }
+    .cd-num {
+      font-size: 20px; font-weight: 800; color: #fff; line-height: 1;
+      font-variant-numeric: tabular-nums; letter-spacing: -1px;
+      text-shadow: 0 0 16px rgba(126,207,255,.6);
+    }
+    .cd-lbl { font-size: 8px; font-weight: 700; letter-spacing: 1px;
+              color: rgba(255,255,255,.45); margin-top: 2px; text-transform: uppercase; }
+    .cd-sep { font-size: 18px; font-weight: 800; color: rgba(255,255,255,.3); margin-bottom: 10px; }
+    .cd-msg { font-size: 13px; font-weight: 700; color: #7ecfff; }
+    .cd-live { display: flex; align-items: center; gap: 7px; }
+    .cd-live-dot {
+      width: 9px; height: 9px; border-radius: 50%; background: #ff4d4d;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,77,77,.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(255,77,77,0); }
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────── */
+    .wrap { display: flex; margin-top: calc(var(--header-h) + var(--banner-h) + var(--filter-bar-h)); min-height: calc(100vh - var(--header-h) - var(--banner-h) - var(--filter-bar-h)); }
+
+    /* ─── Filter Bar ─────────────────────────────────────────────── */
+    .filter-bar {
+      position: fixed; top: calc(var(--header-h) + var(--banner-h)); left: 0; right: 0;
+      z-index: 180; height: var(--filter-bar-h);
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px; padding: 0 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    }
+    .flt-search { position: relative; flex: 1; max-width: 340px; }
+    .flt-search input {
+      width: 100%; padding: 7px 10px 7px 33px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 13px; background: var(--bg); color: var(--text);
+      outline: none; transition: border-color .2s;
+    }
+    .flt-search input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,120,212,.12); }
+    .flt-search .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+                       color: var(--text3); font-size: 14px; pointer-events: none; }
+    .sb-clear {
+      padding: 6px 14px; border: 1px dashed var(--border); border-radius: var(--radius);
+      background: transparent; color: var(--blue); font-size: 12px;
+      transition: all .2s; white-space: nowrap; flex-shrink: 0;
+    }
+    .sb-clear:hover { background: var(--blue-light); border-color: var(--blue); }
+    .flt-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+    .flt-group { position: relative; flex-shrink: 0; }
+    .flt-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--surface); color: var(--text2);
+      font-size: 12px; font-weight: 600; transition: all .2s; white-space: nowrap;
+    }
+    .flt-btn:hover, .flt-btn.open { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .flt-btn.has-filter { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .flt-arr { font-size: 9px; opacity: .5; transition: transform .2s; }
+    .flt-btn.open .flt-arr { transform: rotate(180deg); }
+    .flt-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      background: var(--blue); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 8px;
+    }
+    .flt-badge:empty { display: none; }
+    .flt-dropdown {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0;
+      min-width: 230px; max-height: 340px; overflow-y: auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow); z-index: 300; padding: 8px;
+    }
+    .flt-dropdown.open { display: block; }
+    .sb-section { margin-bottom: 10px; }
+    .sb-section-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--text3); margin-bottom: 6px;
+      padding-bottom: 5px; border-bottom: 1px solid var(--border);
+    }
+    .sb-item { display: flex; align-items: center; gap: 7px;
+               padding: 4px 3px; border-radius: 5px; transition: background .15s; }
+    .sb-item:hover { background: var(--bg); }
+    .sb-item input[type=checkbox] { width: 13px; height: 13px; accent-color: var(--blue); cursor: pointer; }
+    .sb-item label { font-size: 12px; color: var(--text2); cursor: pointer; flex: 1; user-select: none; }
+    .sb-count { font-size: 10px; color: var(--text3); background: var(--bg);
+                padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
+
+    /* ─── Main ───────────────────────────────────────────────────── */
+    .main { flex: 1; padding: 18px 20px; }
+
+    .toolbar { display: flex; align-items: center; justify-content: space-between;
+               flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .tool-info { font-size: 13px; color: var(--text2); }
+    .tool-info strong { color: var(--text); font-weight: 700; }
+    .tool-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .per-label { font-size: 12px; color: var(--text3); white-space: nowrap; }
+
+    .sort-sel {
+      padding: 6px 26px 6px 10px; border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 12px; background: var(--surface);
+      color: var(--text2); cursor: pointer; outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+
+    .view-grp { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .view-btn { padding: 6px 11px; border: none; background: var(--surface);
+                color: var(--text2); font-size: 13px; transition: all .15s; }
+    .view-btn.on { background: var(--blue); color: #fff; }
+    .view-btn:hover:not(.on) { background: var(--bg); }
+
+    /* Active filter pills */
+    .active-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .pill { display: flex; align-items: center; gap: 3px;
+            padding: 3px 9px; border-radius: 12px;
+            font-size: 11px; font-weight: 500;
+            background: var(--blue-light); color: var(--blue);
+            border: 1px solid rgba(0,120,212,.25); }
+    .pill-x { font-size: 13px; line-height: 1; cursor: pointer; opacity: .7; }
+    .pill-x:hover { opacity: 1; }
+
+    /* ─── Cards Grid ─────────────────────────────────────────────── */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+    .grid.list { grid-template-columns: 1fr; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 9px;
+      transition: box-shadow .2s, transform .15s, border-color .2s;
+    }
+    .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); border-color: #c1dff5; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 5px; }
+    .card-badges { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 12px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+    }
+    .b-code  { background: var(--blue-light); color: var(--blue); letter-spacing: .8px; }
+    .b-kn    { background: #ffd700; color: #333; }
+    .b-brk   { background: #def4ff; color: #005f9e; }
+    .b-dem   { background: #dff0df; color: #0a5c0a; }
+    .b-ltg   { background: #fff2e0; color: #8a3c00; }
+    .b-lab   { background: #ede8f8; color: #5c3fa3; }
+    .b-tt    { background: #ffe8e8; color: #8b1a1a; }
+    .b-pre   { background: #efefef; color: #444; }
+    .b-lv    { background: var(--bg); color: var(--text2); }
+
+    .topic-pill {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 10px;
+      font-size: 10px; font-weight: 600;
+    }
+    .tp-agents { background: #deeffe; color: #0059a5; }
+    .tp-cloud  { background: #dcf5e4; color: #0a5c2a; }
+    .tp-dev    { background: #fff7d6; color: #7a5c00; }
+    .tp-rai    { background: #fce8e8; color: #8b1a1a; }
+    .tp-win    { background: #eaeaf8; color: #3434a0; }
+    .tp-mdl    { background: #f0eaff; color: #5c3fa3; }
+    .tp-def    { background: var(--bg); color: var(--text2); }
+
+    .card-title {
+      font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.4;
+    }
+    .card-title a:hover { color: var(--blue); }
+    .card-title-ko {
+      font-size: 12px; color: var(--blue); line-height: 1.45;
+      padding: 6px 8px; background: #f0f8ff; border-left: 3px solid var(--blue);
+      border-radius: 0 4px 4px 0; margin-top: 2px;
+    }
+    .card-speaker { font-size: 11px; color: var(--text3); }
+    .card-speaker span { color: var(--text2); }
+    .card-desc {
+      font-size: 12px; color: var(--text2); line-height: 1.55;
+      overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    }
+    .card-desc.expand { -webkit-line-clamp: unset; display: block; }
+    .card-desc-ko {
+      font-size: 12px; color: var(--text2); line-height: 1.6;
+      padding: 7px 9px; background: #f4faff;
+      border-left: 3px solid #9cd1f7; border-radius: 0 4px 4px 0; margin-top: 4px;
+    }
+
+    .card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag { padding: 2px 7px; border-radius: 10px; font-size: 10px;
+           background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+
+    .card-foot { display: flex; align-items: center; justify-content: space-between;
+                 padding-top: 8px; border-top: 1px solid var(--border); margin-top: auto; }
+    .card-time { font-size: 11px; color: var(--text3); }
+    .time-slot { display: inline-flex; align-items: baseline; gap: 3px; flex-wrap: wrap; }
+    .tz-tag { font-size: 9px; font-weight: 700; letter-spacing: .4px;
+              color: #fff; background: var(--text3); border-radius: 3px;
+              padding: 1px 4px; vertical-align: middle; }
+    .tz-sep { color: var(--text3); opacity: .5; font-size: 10px; }
+    .card-acts { display: flex; gap: 6px; }
+
+    .btn-sm {
+      padding: 3px 10px; border-radius: 11px; font-size: 11px;
+      transition: all .2s;
+    }
+    .btn-ko {
+      border: 1px solid var(--blue); color: var(--blue); background: transparent;
+    }
+    .btn-ko:hover { background: var(--blue); color: #fff; }
+    .btn-ko.busy { opacity: .5; pointer-events: none; }
+    .btn-exp {
+      border: 1px solid var(--border); color: var(--text2); background: transparent;
+    }
+    .btn-exp:hover { background: var(--bg); }
+
+    /* ─── Table ──────────────────────────────────────────────────── */
+    .tbl-wrap { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    thead th {
+      background: var(--bg); padding: 9px 11px; text-align: left;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text3); border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td { padding: 10px 11px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 12px; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+    .tbl-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .tbl-title a:hover { color: var(--blue); }
+    .tbl-ko { font-size: 11px; color: var(--blue); margin-top: 2px; }
+
+    /* ─── Loading / Empty ─────────────────────────────────────────── */
+    .loading, .empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 380px; gap: 14px; color: var(--text2);
+    }
+    .spin {
+      width: 38px; height: 38px;
+      border: 3px solid var(--border); border-top-color: var(--blue);
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-icon { font-size: 48px; }
+    .empty h3 { font-size: 17px; font-weight: 600; }
+    .empty p { font-size: 13px; color: var(--text3); }
+
+    /* ─── Pagination ─────────────────────────────────────────────── */
+    .pagination { display: flex; justify-content: center; align-items: center;
+                  gap: 6px; padding: 24px 0 12px; flex-wrap: wrap; }
+    .mt-notice {
+      display: none; text-align: center; font-size: 11px; color: var(--text3);
+      padding: 8px 16px 24px; line-height: 1.6;
+    }
+    .mt-notice.show { display: block; }
+    .card-desc-ko { position: relative; }
+    .desc-ko-lbl {
+      display: block; font-size: 10px; font-weight: 600;
+      color: #5b9bd5; letter-spacing: .3px; margin-bottom: 3px;
+    }
+    .pg-btn {
+      padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--surface); color: var(--text2); font-size: 12px; transition: all .15s;
+    }
+    .pg-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 700; }
+    .pg-btn:hover:not(.on):not(:disabled) { background: var(--bg); }
+    .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ─── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .sidebar { transform: translateX(-100%); transition: transform .3s; }
+      .sidebar.open { transform: none; box-shadow: var(--shadow); }
+      .main { margin-left: 0; }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Scrollbar polish ───────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0cece; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b0aeac; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────────── -->
+<header class="hdr">
+  <div class="hdr-left">
+    <a class="hdr-logo" href="#" onclick="goHome(); return false;">
+      <img src="imgs/microsoft_icon.png" alt="Microsoft" class="ms-icon">
+      <span>Microsoft <em>Build</em> 2026</span>
+    </a>
+    <div class="hdr-sub" id="hdr-sub">Session Navigator</div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-count" id="hdr-count">Loading…</div>
+    <button class="btn-export" id="btn-export" onclick="exportXLSX()" title="Export to Excel">⬇ Export</button>
+    <div class="lang-wrap">
+      <button class="lang-btn on" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn"    id="btn-ko" onclick="setLang('ko')">한국어</button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── Event Banner ───────────────────────────────────────────────── -->
+<div class="evt-banner" id="evt-banner">
+  <div class="evt-left">
+    <div class="evt-info">
+      <span class="evt-date" id="evt-date-lbl">📅 June 2–3, 2026 &nbsp;·&nbsp; San Francisco &amp; Online</span>
+    </div>
+    <a class="evt-reg" id="evt-reg-btn"
+       href="https://register.build.microsoft.com/flow/microsoft/build26/welcome/page/welcome"
+       target="_blank" rel="noopener noreferrer">🎟 Register Now →</a>
+  </div>
+  <div class="evt-cd" id="evt-cd">
+    <div class="cd-unit"><span class="cd-num" id="cd-d">--</span><span class="cd-lbl" id="cd-lbl-d">DAYS</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-h">--</span><span class="cd-lbl" id="cd-lbl-h">HRS</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-m">--</span><span class="cd-lbl" id="cd-lbl-m">MIN</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-s">--</span><span class="cd-lbl" id="cd-lbl-s">SEC</span></div>
+  </div>
+</div>
+
+<!-- ─── Filter Bar ─────────────────────────────────────────────────── -->
+<div class="filter-bar">
+  <div class="flt-search">
+    <span class="ico">🔍</span>
+    <input type="text" id="q" placeholder="Search sessions…" oninput="applyFilters()" />
+  </div>
+  <button class="sb-clear" id="btn-clear" onclick="clearAll()">🗑 Clear Filters</button>
+  <div class="flt-divider"></div>
+  <div class="flt-group">
+    <button class="flt-btn" id="flt-btn-topic" onclick="toggleDropdown('dd-topic')">
+      <span id="lbl-topic-btn">TOPIC</span><span class="flt-arr">▾</span><span class="flt-badge" id="badge-topic"></span>
+    </button>
+    <div class="flt-dropdown" id="dd-topic">
+      <div class="sb-section" id="sb-topic"><div class="sb-section-title" id="lbl-topic">TOPIC</div></div>
+    </div>
+  </div>
+  <div class="flt-group">
+    <button class="flt-btn" id="flt-btn-type" onclick="toggleDropdown('dd-type')">
+      <span id="lbl-type-btn">SESSION TYPE</span><span class="flt-arr">▾</span><span class="flt-badge" id="badge-type"></span>
+    </button>
+    <div class="flt-dropdown" id="dd-type">
+      <div class="sb-section" id="sb-type"><div class="sb-section-title" id="lbl-type">SESSION TYPE</div></div>
+    </div>
+  </div>
+  <div class="flt-group">
+    <button class="flt-btn" id="flt-btn-level" onclick="toggleDropdown('dd-level')">
+      <span id="lbl-level-btn">LEVEL</span><span class="flt-arr">▾</span><span class="flt-badge" id="badge-level"></span>
+    </button>
+    <div class="flt-dropdown" id="dd-level">
+      <div class="sb-section" id="sb-level"><div class="sb-section-title" id="lbl-level">LEVEL</div></div>
+    </div>
+  </div>
+  <div class="flt-group">
+    <button class="flt-btn" id="flt-btn-delivery" onclick="toggleDropdown('dd-delivery')">
+      <span id="lbl-delivery-btn">DELIVERY</span><span class="flt-arr">▾</span><span class="flt-badge" id="badge-delivery"></span>
+    </button>
+    <div class="flt-dropdown" id="dd-delivery">
+      <div class="sb-section" id="sb-delivery"><div class="sb-section-title" id="lbl-delivery">DELIVERY</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Body ────────────────────────────────────────────────────────── -->
+<div class="wrap">
+
+  <!-- Main -->
+  <main class="main">
+    <div class="toolbar">
+      <div class="tool-info" id="tool-info">Loading sessions…</div>
+      <div id="data-freshness" style="font-size:11px;color:var(--text3);margin-left:8px;"></div>
+      <div class="tool-right">
+        <label class="per-label" id="per-label" for="per-page">Show</label>
+        <select class="sort-sel" id="per-page" onchange="changePerPage()">
+          <option value="12">12</option>
+          <option value="24">24</option>
+          <option value="30" selected>30</option>
+          <option value="60">60</option>
+          <option value="all">All</option>
+        </select>
+        <select class="sort-sel" id="sort" onchange="applyFilters()">
+          <option value="">Default</option>
+          <option value="title">Title A–Z</option>
+          <option value="level">Level</option>
+          <option value="type">Type</option>
+          <option value="time">Time</option>
+        </select>
+        <div class="view-grp">
+          <button class="view-btn on" id="vg" onclick="setView('grid')"  title="Grid">⊞</button>
+          <button class="view-btn"    id="vl" onclick="setView('list')"  title="List">☰</button>
+          <button class="view-btn"    id="vt" onclick="setView('table')" title="Table">▤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="active-pills" id="pills"></div>
+    <div id="out"><div class="loading"><div class="spin"></div><p id="loading-txt">Loading sessions…</p></div></div>
+    <div class="pagination" id="pager"></div>
+    <div class="mt-notice" id="mt-notice"></div>
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   Countdown
+═══════════════════════════════════════════════════════════════════ */
+const BUILD_START = new Date('2026-06-02T16:00:00Z'); // June 2, 2026 9:00 AM PDT
+const BUILD_END   = new Date('2026-06-04T02:00:00Z'); // June 3, 2026 7:00 PM PDT
+
+// EN → UTC  |  KO → KST (UTC+9)
+// BUILD_START = 2026-06-02T16:00Z  → UTC: Jun 2 16:00  / KST: Jun 3 01:00
+// BUILD_END   = 2026-06-04T02:00Z  → UTC: Jun 4 02:00  / KST: Jun 4 11:00
+const CD_LABELS = {
+  en: { days:'DAYS', hrs:'HRS', min:'MIN', sec:'SEC', live:'🔴 LIVE NOW', ended:'Event Ended',
+        date:'📅 Jun 2, 16:00 – Jun 4, 02:00 UTC · San Francisco & Online', reg:'🎟 Register Now →' },
+  ko: { days:'일',   hrs:'시간', min:'분',  sec:'초',  live:'🔴 지금 라이브', ended:'행사 종료',
+        date:'📅 6월 3일 01:00 ~ 6월 4일 11:00 KST · 샌프란시스코 & 온라인', reg:'🎟 지금 등록하기 →' }
+};
+
+function updateCountdown() {
+  const now  = new Date();
+  const diff = BUILD_START - now;
+  const lbl  = CD_LABELS[lang];
+  const cd   = document.getElementById('evt-cd');
+  if (!cd) return;
+
+  // Update static banner texts
+  const dateEl = document.getElementById('evt-date-lbl');
+  const regEl  = document.getElementById('evt-reg-btn');
+  if (dateEl) dateEl.textContent = lbl.date;
+  if (regEl)  regEl.textContent  = lbl.reg;
+
+  if (diff <= 0) {
+    if (now < BUILD_END) {
+      cd.innerHTML = `<div class="cd-live"><div class="cd-live-dot"></div><span class="cd-msg">${lbl.live}</span></div>`;
+    } else {
+      cd.innerHTML = `<span class="cd-msg" style="color:rgba(255,255,255,.4)">${lbl.ended}</span>`;
+    }
+    return;
+  }
+
+  const totalSec = Math.floor(diff / 1000);
+  const s = totalSec % 60;
+  const m = Math.floor(totalSec / 60) % 60;
+  const h = Math.floor(totalSec / 3600) % 24;
+  const d = Math.floor(totalSec / 86400);
+
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('cd-d').textContent = pad(d);
+  document.getElementById('cd-h').textContent = pad(h);
+  document.getElementById('cd-m').textContent = pad(m);
+  document.getElementById('cd-s').textContent = pad(s);
+  document.getElementById('cd-lbl-d').textContent = lbl.days;
+  document.getElementById('cd-lbl-h').textContent = lbl.hrs;
+  document.getElementById('cd-lbl-m').textContent = lbl.min;
+  document.getElementById('cd-lbl-s').textContent = lbl.sec;
+}
+
+setInterval(updateCountdown, 1000);
+
+/* ═══════════════════════════════════════════════════════════════════
+   State
+═══════════════════════════════════════════════════════════════════ */
+let ALL = [], FILTERED = [];
+let lang = 'en', view = 'grid', page = 1;
+let PER = 30;
+const CACHE = new Map();   // translation cache (fallback)
+let KR_TRANS = {};          // pre-loaded translations from sessions_kr.json
+let KR_LAST_UPDATED = '';   // ISO timestamp
+
+/* ═══════════════════════════════════════════════════════════════════
+   i18n
+═══════════════════════════════════════════════════════════════════ */
+const T = {
+  en: {
+    sub: 'Session Navigator',
+    count: n => `${n} Sessions`,
+    loading: 'Loading sessions…',
+    clear: '🗑 Clear Filters',
+    export: '⬇ Export',
+    topic: 'TOPIC', type: 'SESSION TYPE', level: 'LEVEL', delivery: 'DELIVERY',
+    sort_def: 'Default', sort_title: 'Title A–Z', sort_level: 'Level',
+    sort_type: 'Type', sort_time: 'Time',
+    per_label: 'Show', per_all: 'All',
+    result: (n, t) => `Showing <strong>${n}</strong> / ${t} sessions`,
+    speaker: 'Speaker', more: 'More ▼', less: 'Less ▲',
+    translate: '🇰🇷 번역', translating: '번역 중…',
+    no_result: 'No sessions match your filters.',
+    prev: '← Prev', next: 'Next →',
+    col_code: 'Code', col_title: 'Title', col_type: 'Type',
+    col_level: 'Level', col_topic: 'Topic', col_speaker: 'Speaker', col_time: 'Time',
+    col_delivery: 'Delivery', col_location: 'Location', col_desc: 'Description', col_desc_kr: 'Korean Description',
+  },
+  ko: {
+    sub: '세션 탐색기',
+    count: n => `총 ${n}개 세션`,
+    loading: '세션 데이터를 불러오는 중…',
+    clear: '🗑 필터 초기화',
+    export: '⬇ 내보내기',
+    topic: '주제', type: '세션 유형', level: '난이도', delivery: '진행 방식',
+    sort_def: '기본 정렬', sort_title: '제목순 (A–Z)', sort_level: '난이도순',
+    sort_type: '유형순', sort_time: '시간순',
+    per_label: '표시', per_all: '전체',
+    result: (n, t) => `전체 ${t}개 중 <strong>${n}</strong>개 표시`,
+    speaker: '발표자', more: '더 보기 ▼', less: '접기 ▲',
+    translate: '한국어 요약 보기', translating: '번역 중…',
+    no_result: '필터에 맞는 세션이 없습니다.',
+    prev: '← 이전', next: '다음 →',
+    col_code: '코드', col_title: '제목', col_type: '유형',
+    col_level: '난이도', col_topic: '주제', col_speaker: '발표자', col_time: '시간',
+    col_delivery: '진행 방식', col_location: '장소', col_desc: '설명(영문)', col_desc_kr: '설명(한국어)',
+  }
+};
+
+/* Static KO labels for filters */
+const KO_TOPIC = {
+  'Agents & apps': '에이전트 & 앱',
+  'Cloud platform & data': '클라우드 플랫폼 & 데이터',
+  'Developer tools & frameworks': '개발자 도구 & 프레임워크',
+  'Responsible AI': '책임 있는 AI',
+  'Windows': 'Windows',
+  'Working with models': '모델 활용',
+};
+const KO_TYPE = {
+  'Keynote': '기조연설', 'Breakout': '브레이크아웃', 'Demo': '데모',
+  'Lightning Talk': '라이트닝 토크', 'Lab': '실습', 'Table Talk': '테이블 토크',
+  'Pre-recorded': '사전 녹화', 'Broadcast Stage': '방송 무대', 'Digital Lab': '디지털 실습',
+};
+const KO_LEVEL = {
+  '(100) Foundational': '(100) 기초', '(200) Intermediate': '(200) 중급',
+  '(300) Advanced': '(300) 고급', '(400) Expert': '(400) 전문가',
+};
+const KO_DELIVERY = { 'In-person': '현장 참석', 'Online': '온라인' };
+
+/* ═══════════════════════════════════════════════════════════════════
+   Styling helpers
+═══════════════════════════════════════════════════════════════════ */
+const TYPE_CLS = {
+  'Keynote':'b-kn','Broadcast Stage':'b-kn',
+  'Breakout':'b-brk','Demo':'b-dem','Lightning Talk':'b-ltg',
+  'Lab':'b-lab','Digital Lab':'b-lab','Table Talk':'b-tt','Pre-recorded':'b-pre',
+};
+const TOPIC_CLS = {
+  'Agents & apps':'tp-agents','Cloud platform & data':'tp-cloud',
+  'Developer tools & frameworks':'tp-dev','Responsible AI':'tp-rai',
+  'Windows':'tp-win','Working with models':'tp-mdl',
+};
+
+function typeCls(t) { return TYPE_CLS[t] || 'b-brk'; }
+function topicCls(t) { return TOPIC_CLS[t] || 'tp-def'; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Time slot formatter (UTC → UTC + KST)
+═══════════════════════════════════════════════════════════════════ */
+function addHours(hhmm, h) {
+  const [hh, mm] = hhmm.split(':').map(Number);
+  const total = hh * 60 + mm + h * 60;
+  const rh = Math.floor((total % 1440) / 60);
+  const rm = total % 60;
+  const overflow = Math.floor(total / 1440);   // 일수 오버플로우
+  return { t: `${String(rh).padStart(2,'0')}:${String(rm).padStart(2,'0')}`, overflow };
+}
+
+function formatTimeSlot(slot) {
+  if (!slot) return '';
+  const m = slot.match(/^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+  if (!m) return slot;
+  const [, s, e] = m;
+  if (lang === 'ko') {
+    const ks = addHours(s, 9);
+    const ke = addHours(e, 9);
+    const nextDay = (ks.overflow > 0 || ke.overflow > 0) ? '<sup>+1</sup>' : '';
+    return `${ks.t}–${ke.t}${nextDay} <span class="tz-tag">KST</span>`;
+  } else {
+    return `${s}–${e} <span class="tz-tag">UTC</span>`;
+  }
+}
+
+function formatTimeSlotPlain(slot) {
+  if (!slot) return '';
+  const m = slot.match(/^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+  if (!m) return slot;
+  const [, s, e] = m;
+  const ks = addHours(s, 9);
+  const ke = addHours(e, 9);
+  const nd = (ks.overflow > 0 || ke.overflow > 0) ? '(+1)' : '';
+  return `${s}–${e} UTC / ${ks.t}–${ke.t}${nd} KST`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Fetch
+═══════════════════════════════════════════════════════════════════ */
+async function fetchSessions() {
+  const r = await fetch('source/sessions.json');
+  if (!r.ok) throw new Error(`sessions.json 로드 실패: HTTP ${r.status}`);
+  const data = await r.json();
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.value)) return data.value;
+  if (data && Array.isArray(data.sessions)) return data.sessions;
+  const arrProp = Object.values(data).find(Array.isArray);
+  return arrProp || [];
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pre-load Korean translations from sessions_kr.json
+═══════════════════════════════════════════════════════════════════ */
+async function fetchTranslations() {
+  try {
+    const r = await fetch('source/sessions_kr.json');
+    if (!r.ok) return;
+    const data = await r.json();
+    KR_TRANS = data.translations || {};
+    KR_LAST_UPDATED = data.last_updated || '';
+    // sessions_kr.json 캐시 방지: Content-Type 헤더는 서버가 처리
+  } catch { /* translations 없어도 동작은 함 */ }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Translation fallback (unofficial Google Translate – cached)
+   sessions_kr.json 에 없는 세션에 한해 사용
+═══════════════════════════════════════════════════════════════════ */
+async function xlate(text) {
+  if (!text) return '';
+  const k = text.slice(0, 120);
+  if (CACHE.has(k)) return CACHE.get(k);
+  try {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=' +
+                encodeURIComponent(text);
+    const res = await fetch(url);
+    const d = await res.json();
+    const t = (d[0] || []).filter(Boolean).map(x => x[0] || '').join('');
+    CACHE.set(k, t);
+    return t;
+  } catch { return ''; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Build sidebar filters
+═══════════════════════════════════════════════════════════════════ */
+function buildFilters(sessions) {
+  const maps = { topic: new Map(), type: new Map(), level: new Map(), delivery: new Map() };
+  sessions.forEach(s => {
+    arr(s.topic).forEach(t => { const k = t.displayValue||t.logicalValue; if(k) maps.topic.set(k,(maps.topic.get(k)||0)+1); });
+    const ty = s.sessionType?.displayValue; if(ty) maps.type.set(ty,(maps.type.get(ty)||0)+1);
+    arr(s.sessionLevel).forEach(l => { const k = l.displayValue; if(k) maps.level.set(k,(maps.level.get(k)||0)+1); });
+    arr(s.deliveryTypes).forEach(d => { const k = d.displayValue; if(k) maps.delivery.set(k,(maps.delivery.get(k)||0)+1); });
+  });
+  return maps;
+}
+
+function renderFilters(maps) {
+  renderSection('sb-topic', 'lbl-topic', maps.topic, 'topic',
+    lang==='ko' ? KO_TOPIC : null, T[lang].topic);
+  renderSection('sb-type',  'lbl-type',  maps.type,  'type',
+    lang==='ko' ? KO_TYPE  : null, T[lang].type);
+  renderSection('sb-level', 'lbl-level', maps.level, 'level',
+    lang==='ko' ? KO_LEVEL : null, T[lang].level);
+  renderSection('sb-delivery','lbl-delivery',maps.delivery,'delivery',
+    lang==='ko' ? KO_DELIVERY : null, T[lang].delivery);
+}
+
+function renderSection(secId, lblId, map, ft, koMap, title) {
+  const sec = document.getElementById(secId);
+  // Remove old items
+  sec.querySelectorAll('.sb-item').forEach(e => e.remove());
+  document.getElementById(lblId).textContent = title;
+  // Sort entries by count desc
+  const entries = [...map.entries()].sort((a,b) => b[1]-a[1]);
+  entries.forEach(([key, count]) => {
+    const id = `f-${ft}-${CSS.escape(key)}`;
+    const label = (koMap && koMap[key]) ? `${koMap[key]}` : key;
+    const div = document.createElement('div');
+    div.className = 'sb-item';
+    div.innerHTML = `
+      <input type="checkbox" id="${id}" value="${esc(key)}" data-ft="${ft}" onchange="applyFilters()">
+      <label for="${id}">${esc(label)}</label>
+      <span class="sb-count">${count}</span>`;
+    sec.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Filter & sort
+═══════════════════════════════════════════════════════════════════ */
+function getFilters() {
+  const f = { q: (document.getElementById('q').value||'').toLowerCase().trim(),
+               topic:[], type:[], level:[], delivery:[] };
+  document.querySelectorAll('[data-ft]:checked').forEach(el => f[el.dataset.ft].push(el.value));
+  return f;
+}
+
+function applyFilters() {
+  const f = getFilters();
+  const sort = document.getElementById('sort').value;
+
+  FILTERED = ALL.filter(s => {
+    if (f.q) {
+      const blob = [s.title, s.description, s.ogDescription, s.speakerNames,
+                    s.sessionCode, s._koDesc,
+                    ...(arr(s.tags).map(t=>t.displayValue))]
+                   .filter(Boolean).join(' ').toLowerCase();
+      if (!blob.includes(f.q)) return false;
+    }
+    if (f.topic.length) {
+      const st = arr(s.topic).map(t=>t.displayValue||t.logicalValue);
+      if (!f.topic.some(v=>st.includes(v))) return false;
+    }
+    if (f.type.length && !f.type.includes(s.sessionType?.displayValue||'')) return false;
+    if (f.level.length) {
+      const sl = arr(s.sessionLevel).map(l=>l.displayValue);
+      if (!f.level.some(v=>sl.includes(v))) return false;
+    }
+    if (f.delivery.length) {
+      const sd = arr(s.deliveryTypes).map(d=>d.displayValue);
+      if (!f.delivery.some(v=>sd.includes(v))) return false;
+    }
+    return true;
+  });
+
+  const LO = { '(100) Foundational':1,'(200) Intermediate':2,'(300) Advanced':3,'(400) Expert':4 };
+  if (sort === 'title')  FILTERED.sort((a,b)=>(a.title||'').localeCompare(b.title||''));
+  if (sort === 'level')  FILTERED.sort((a,b)=>(LO[a.sessionLevel?.[0]?.displayValue]||9)-(LO[b.sessionLevel?.[0]?.displayValue]||9));
+  if (sort === 'type')   FILTERED.sort((a,b)=>(a.sessionType?.displayValue||'').localeCompare(b.sessionType?.displayValue||''));
+  if (sort === 'time')   FILTERED.sort((a,b)=>(a.TimeSlot||'').localeCompare(b.TimeSlot||''));
+
+  updateFilterBadges();
+  page = 1;
+  renderPills(f);
+  renderInfo();
+  render();
+}
+
+function changePerPage() {
+  const val = document.getElementById('per-page').value;
+  PER = val === 'all' ? Infinity : parseInt(val, 10);
+  page = 1;
+  render();
+  renderPager();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Active filter pills
+═══════════════════════════════════════════════════════════════════ */
+function renderPills(f) {
+  const el = document.getElementById('pills');
+  el.innerHTML = '';
+  const add = (label, ft, val) => {
+    const d = document.createElement('div');
+    d.className = 'pill';
+    d.innerHTML = `${esc(label)} <span class="pill-x" onclick="removePill('${ft}','${esc(val)}')">×</span>`;
+    el.appendChild(d);
+  };
+  f.topic.forEach(v => add((lang==='ko'&&KO_TOPIC[v])||v,'topic',v));
+  f.type.forEach(v => add((lang==='ko'&&KO_TYPE[v])||v,'type',v));
+  f.level.forEach(v => add((lang==='ko'&&KO_LEVEL[v])||v,'level',v));
+  f.delivery.forEach(v => add((lang==='ko'&&KO_DELIVERY[v])||v,'delivery',v));
+  if (f.q) {
+    const d = document.createElement('div');
+    d.className = 'pill';
+    d.innerHTML = `"${esc(f.q)}" <span class="pill-x" onclick="clearQ()">×</span>`;
+    el.appendChild(d);
+  }
+}
+function removePill(ft, val) {
+  document.querySelectorAll(`[data-ft="${ft}"]`).forEach(el => { if(el.value===val) el.checked=false; });
+  applyFilters();
+}
+function clearQ() { document.getElementById('q').value=''; applyFilters(); }
+function clearAll() {
+  document.querySelectorAll('[data-ft]').forEach(el=>el.checked=false);
+  document.getElementById('q').value='';
+  document.getElementById('sort').value='';
+  applyFilters();
+}
+
+function goHome() {
+  clearAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleDropdown(id) {
+  const dd = document.getElementById(id);
+  const btn = dd.previousElementSibling;
+  const isOpen = dd.classList.contains('open');
+  closeAllDropdowns();
+  if (!isOpen) { dd.classList.add('open'); btn.classList.add('open'); }
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.flt-dropdown').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.flt-btn').forEach(b => b.classList.remove('open'));
+}
+
+function updateFilterBadges() {
+  ['topic','type','level','delivery'].forEach(ft => {
+    const n = document.querySelectorAll(`[data-ft="${ft}"]:checked`).length;
+    const badge = document.getElementById(`badge-${ft}`);
+    if (badge) badge.textContent = n > 0 ? n : '';
+    const btn = document.getElementById(`flt-btn-${ft}`);
+    if (btn) btn.classList.toggle('has-filter', n > 0);
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.flt-group')) closeAllDropdowns();
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Export to XLSX
+═══════════════════════════════════════════════════════════════════ */
+function exportXLSX() {
+  const t = T[lang];
+  const headers = [
+    t.col_code, t.col_title, t.col_type, t.col_level,
+    t.col_topic, t.col_delivery, t.col_speaker,
+    t.col_location, t.col_time, t.col_desc, t.col_desc_kr
+  ];
+  const rows = FILTERED.map(s => [
+    s.sessionCode || '',
+    s.title || '',
+    s.sessionType?.displayValue || '',
+    arr(s.sessionLevel).map(l => l.displayValue).join(', '),
+    arr(s.topic).map(t => t.displayValue || t.logicalValue || '').join('; '),
+    arr(s.deliveryTypes).map(d => d.displayValue).join(', '),
+    s.speakerNames || '',
+    s.location?.displayValue || '',
+    formatTimeSlotPlain(s.TimeSlot || ''),
+    s.ogDescription || s.description || '',
+    s._koDesc || ''
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // 컬럼 너비 자동 설정
+  const colWidths = headers.map((h, i) => {
+    const max = Math.max(h.length, ...rows.map(r => String(r[i] || '').length));
+    return { wch: Math.min(max + 2, 80) };
+  });
+  ws['!cols'] = colWidths;
+
+  // 헤더 행 스타일 (굵게)
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+    if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: '0078D4' } } };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sessions');
+
+  const date = new Date().toISOString().slice(0, 10);
+  const filterTag = FILTERED.length < ALL.length ? `_filtered${FILTERED.length}` : `_all${ALL.length}`;
+  XLSX.writeFile(wb, `MSBuild2026_Sessions${filterTag}_${date}.xlsx`);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Info bar
+═══════════════════════════════════════════════════════════════════ */
+function renderInfo() {
+  document.getElementById('tool-info').innerHTML = T[lang].result(FILTERED.length, ALL.length);
+  document.getElementById('hdr-count').textContent = T[lang].count(ALL.length);
+  // 기계번역 안내 (한국어 모드일 때만)
+  const notice = document.getElementById('mt-notice');
+  if (notice) {
+    if (lang === 'ko') {
+      notice.className = 'mt-notice show';
+      notice.innerHTML = '※ 세션 설명은 기계 번역(Google Translate)으로 제공되므로 정확하지 않을 수 있습니다.<br>정확한 내용은 영문 원문을 우선하여 확인하시기 바랍니다.';
+    } else {
+      notice.className = 'mt-notice';
+    }
+  }
+  // 데이터 기준일 표시
+  const el = document.getElementById('data-freshness');
+  if (el && KR_LAST_UPDATED) {
+    const d = new Date(KR_LAST_UPDATED);
+    const fmt = d.toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US',
+      { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const ageH = Math.floor((Date.now() - d.getTime()) / 3600000);
+    const stale = ageH >= 24;
+    el.innerHTML = stale
+      ? `<span style="color:var(--orange)" title="server.py를 실행하여 갱신하세요">⚠ ${lang==='ko'?'번역 데이터가 오래되었습니다':'Translation data is stale'} (${ageH}h)</span>`
+      : `<span title="${KR_LAST_UPDATED}">${lang==='ko'?'번역 기준':'Translated'}: ${fmt}</span>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Render sessions
+═══════════════════════════════════════════════════════════════════ */
+function render() {
+  const out = document.getElementById('out');
+  if (!FILTERED.length) {
+    out.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>
+      <h3>${T[lang].no_result}</h3></div>`;
+    document.getElementById('pager').innerHTML = '';
+    return;
+  }
+  const start = isFinite(PER) ? (page-1)*PER : 0;
+  const end   = isFinite(PER) ? start+PER : FILTERED.length;
+  const slice = FILTERED.slice(start, end);
+
+  if (view === 'table') renderTable(out, slice);
+  else renderCards(out, slice);
+  renderPager();
+
+  // Auto-translate titles if Korean
+  if (lang === 'ko') autoXlate(slice);
+}
+
+function renderCards(out, sessions) {
+  const cls = view === 'list' ? 'grid list' : 'grid';
+  out.innerHTML = `<div class="${cls}" id="grid"></div>`;
+  const grid = document.getElementById('grid');
+  sessions.forEach(s => grid.appendChild(makeCard(s)));
+}
+
+function renderTable(out, sessions) {
+  const t = T[lang];
+  out.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>${t.col_code}</th><th>${t.col_title}</th><th>${t.col_type}</th>
+      <th>${t.col_level}</th><th>${t.col_topic}</th><th>${t.col_speaker}</th><th>${t.col_time}</th>
+    </tr></thead>
+    <tbody>${sessions.map(s=>makeTr(s)).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ─── Card ─────────────────────────────────────────────────────── */
+function makeCard(s) {
+  const d = document.createElement('div');
+  d.className = 'card'; d.dataset.sid = s.sessionId;
+
+  const code  = s.sessionCode||'';
+  const title = s.title||'';
+  const desc  = s.ogDescription||s.description||'';
+  const spkrs = s.speakerNames||'';
+  const ty    = s.sessionType?.displayValue||'';
+  const lvls  = arr(s.sessionLevel).map(l=>l.displayValue).join(' | ');
+  const tpcs  = arr(s.topic);
+  const tags  = arr(s.tags).slice(0,5);
+  const time  = s.TimeSlot||'';
+  const timeFmt = formatTimeSlot(time);
+  const loc   = s.location?.displayValue||'';
+  const url   = `https://build.microsoft.com/sessions/${code}`;
+
+  const topicPills = tpcs.map(t=>`<span class="topic-pill ${topicCls(t.displayValue)}">${esc(t.displayValue)}</span>`).join('');
+  const tagSpans   = tags.map(t=>`<span class="tag">${esc(t.displayValue)}</span>`).join('');
+  const koDescHtml  = s._koDesc && lang === 'ko'
+    ? `<div class="card-desc-ko"><span class="desc-ko-lbl">🇰🇷 한국어 설명</span>${esc(s._koDesc)}</div>`
+    : '';
+
+  const sid = esc(s.sessionId||'');
+  const hasLongDesc = desc.length > 240;
+
+  d.innerHTML = `
+    <div class="card-top">
+      <div class="card-badges">
+        ${code?`<span class="badge b-code">${esc(code)}</span>`:''}
+        ${ty?`<span class="badge ${typeCls(ty)}">${esc(ty)}</span>`:''}
+        ${lvls?`<span class="badge b-lv">${esc(lvls)}</span>`:''}
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">${topicPills}</div>
+    </div>
+    <div>
+      <div class="card-title"><a href="${url}" target="_blank">${esc(title)}</a></div>
+    </div>
+    ${spkrs?`<div class="card-speaker">🎤 <span>${esc(spkrs)}</span></div>`:''}
+    <div class="card-desc" id="cd-${sid}">${esc(desc)}</div>
+    ${koDescHtml}
+    ${tagSpans?`<div class="card-tags">${tagSpans}</div>`:''}
+    <div class="card-foot">
+      <div class="card-time">${timeFmt?`⏰ <span class="time-slot">${timeFmt}</span>`:''}​${loc?` &nbsp;📍 ${esc(loc)}`:''}</div>
+      <div class="card-acts">
+        ${hasLongDesc?`<button class="btn-sm btn-exp" onclick="toggleDesc('${sid}',this)">${T[lang].more}</button>`:''}
+        ${lang==='ko'&&!s._koDesc?`<button class="btn-sm btn-ko" onclick="xlateCard('${sid}',this)">${T[lang].translate}</button>`:''}
+      </div>
+    </div>`;
+  return d;
+}
+
+/* ─── Table row ────────────────────────────────────────────────── */
+function makeTr(s) {
+  const code  = s.sessionCode||'';
+  const title = s.title||'';
+  const ty    = s.sessionType?.displayValue||'';
+  const lvls  = arr(s.sessionLevel).map(l=>l.displayValue).join('<br>');
+  const tpcs  = arr(s.topic).map(t=>`<span class="topic-pill ${topicCls(t.displayValue)}">${esc(t.displayValue)}</span>`).join(' ');
+  const url   = `https://build.microsoft.com/sessions/${code}`;
+  const koHtml= (s._koDesc && lang==='ko')?`<div class="tbl-ko">${esc(s._koDesc)}</div>`:'';
+  return `<tr>
+    <td><span class="badge b-code">${esc(code)}</span></td>
+    <td><div class="tbl-title"><a href="${url}" target="_blank">${esc(title)}</a></div>${koHtml}</td>
+    <td><span class="badge ${typeCls(ty)}">${esc(ty)}</span></td>
+    <td style="font-size:11px;white-space:nowrap;">${lvls}</td>
+    <td>${tpcs}</td>
+    <td style="color:var(--text2);font-size:11px;">${esc(s.speakerNames||'')}</td>
+    <td style="white-space:nowrap;color:var(--text3);font-size:11px;">${formatTimeSlot(s.TimeSlot||'')}</td>
+  </tr>`;
+}
+
+/* ─── Toggle expand ─────────────────────────────────────────────── */
+function toggleDesc(sid, btn) {
+  const el = document.getElementById('cd-'+sid);
+  if (!el) return;
+  const expand = el.classList.toggle('expand');
+  btn.textContent = expand ? T[lang].less : T[lang].more;
+}
+
+/* ─── Translate single card ─────────────────────────────────────── */
+async function xlateCard(sid, btn) {
+  const s = ALL.find(x=>x.sessionId===sid); if(!s) return;
+
+  // pre-loaded 번역 확인 (API 불필요)
+  const tr = KR_TRANS[sid];
+  if (tr && tr.description_kr) {
+    s._koDesc = tr.description_kr;
+    const card = document.querySelector(`[data-sid="${sid}"]`);
+    if (card) card.replaceWith(makeCard(s));
+    return;
+  }
+
+  // fallback: API 번역
+  btn.classList.add('busy'); btn.textContent = T[lang].translating;
+  try {
+    const desc = s.ogDescription||s.description||'';
+    if (!s._koDesc && desc) s._koDesc = await xlate(desc);
+    const card = document.querySelector(`[data-sid="${sid}"]`);
+    if (card) card.replaceWith(makeCard(s));
+  } catch(e) { btn.textContent = '실패'; btn.classList.remove('busy'); }
+}
+
+/* ─── Auto-show Korean descriptions for visible sessions ────────── */
+function autoXlate(sessions) {
+  // pre-loaded 번역이 있는 세션은 DOM 재렌더 없이 버튼만 제거
+  sessions.forEach(s => {
+    if (!s._koDesc) return;
+    const card = document.querySelector(`[data-sid="${s.sessionId}"]`);
+    if (card) {
+      const btn = card.querySelector('.btn-ko');
+      if (btn) btn.remove();
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pagination
+═══════════════════════════════════════════════════════════════════ */
+function renderPager() {
+  const pager = document.getElementById('pager');
+  if (!isFinite(PER)) { pager.innerHTML = ''; return; }  // All 선택 시 페이저 숨김
+  const total = Math.ceil(FILTERED.length / PER);
+  if (total <= 1) { pager.innerHTML=''; return; }
+  const t = T[lang];
+  let html = `<button class="pg-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>${t.prev}</button>`;
+  getPageRange(page, total).forEach(p => {
+    if (p==='…') html += `<span style="padding:0 4px;color:var(--text3)">…</span>`;
+    else html += `<button class="pg-btn${p===page?' on':''}" onclick="goPage(${p})">${p}</button>`;
+  });
+  html += `<button class="pg-btn" onclick="goPage(${page+1})" ${page===total?'disabled':''}>${t.next}</button>`;
+  pager.innerHTML = html;
+}
+
+function getPageRange(cur, total) {
+  if (total <= 7) return Array.from({length:total},(_,i)=>i+1);
+  const r = [1];
+  if (cur > 3) r.push('…');
+  for (let i=Math.max(2,cur-1); i<=Math.min(total-1,cur+1); i++) r.push(i);
+  if (cur < total-2) r.push('…');
+  r.push(total);
+  return r;
+}
+
+function goPage(p) {
+  const total = Math.ceil(FILTERED.length / PER);
+  if (p<1||p>total) return;
+  page = p; render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Language switch
+═══════════════════════════════════════════════════════════════════ */
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-en').classList.toggle('on', l==='en');
+  document.getElementById('btn-ko').classList.toggle('on', l==='ko');
+  updateCountdown();
+  document.getElementById('hdr-sub').textContent = T[l].sub;
+  document.getElementById('q').placeholder = l==='ko' ? '세션 검색…' : 'Search sessions…';
+  document.getElementById('btn-clear').textContent = T[l].clear;
+  document.getElementById('btn-export').textContent = T[l].export;
+  document.getElementById('per-label').textContent = T[l].per_label;
+  // per-page "All" option label
+  const pp = document.getElementById('per-page');
+  if (pp) pp.querySelector('[value="all"]').textContent = T[l].per_all;
+  document.getElementById('lbl-topic-btn').textContent = T[l].topic;
+  document.getElementById('lbl-type-btn').textContent = T[l].type;
+  document.getElementById('lbl-level-btn').textContent = T[l].level;
+  document.getElementById('lbl-delivery-btn').textContent = T[l].delivery;
+  // sort options
+  const s = document.getElementById('sort');
+  s.options[0].text = T[l].sort_def;
+  s.options[1].text = T[l].sort_title;
+  s.options[2].text = T[l].sort_level;
+  s.options[3].text = T[l].sort_type;
+  s.options[4].text = T[l].sort_time;
+  // Re-render filters with KO labels
+  if (ALL.length) {
+    const maps = buildFilters(ALL);
+    renderFilters(maps);
+    // Keep existing checked state
+    document.querySelectorAll('[data-ft]').forEach(el => {
+      // re-bind the existing checked states - already persisted in DOM by re-render
+    });
+  }
+  renderInfo();
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   View toggle
+═══════════════════════════════════════════════════════════════════ */
+function setView(v) {
+  view = v;
+  ['g','l','t'].forEach(x => {
+    const id = 'v'+x;
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('on', (v==='grid'&&x==='g')||(v==='list'&&x==='l')||(v==='table'&&x==='t'));
+  });
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Utilities
+═══════════════════════════════════════════════════════════════════ */
+function arr(x) { return Array.isArray(x) ? x : []; }
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Init
+═══════════════════════════════════════════════════════════════════ */
+async function init() {
+  document.getElementById('loading-txt').textContent = T[lang].loading;
+  try {
+    // 세션 데이터와 한국어 번역을 병렬로 로드
+    const [sessions] = await Promise.all([fetchSessions(), fetchTranslations()]);
+
+    // De-duplicate by sessionCode (keep first occurrence)
+    const seen = new Set();
+    ALL = sessions.filter(s => {
+      const k = s.sessionCode || s.sessionId;
+      if (!k || seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+
+    // pre-loaded 번역 적용
+    ALL.forEach(s => {
+      const sid = s.sessionId || s.sessionCode;
+      const tr = KR_TRANS[sid];
+      if (tr) {
+        if (tr.description_kr) s._koDesc = tr.description_kr;
+      }
+    });
+
+    FILTERED = [...ALL];
+
+    const maps = buildFilters(ALL);
+    renderFilters(maps);
+    renderInfo();
+    applyFilters();
+  } catch (err) {
+    document.getElementById('out').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">⚠️</div>
+        <h3>데이터를 불러올 수 없습니다</h3>
+        <p>${esc(err.message)}</p>
+        <p style="margin-top:8px;font-size:12px;color:var(--text3);">
+          API 서버가 CORS를 허용하지 않는 경우 로컬 서버(Live Server 등)에서 실행하거나<br>
+          브라우저 CORS 확장을 사용해 주세요.
+        </p>
+      </div>`;
+  }
+}
+
+init();
+updateCountdown();
+</script>
+</body>
+</html>
