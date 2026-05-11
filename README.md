@@ -4,6 +4,8 @@ Microsoft Build 2026 세션 카탈로그를 로컬에서 빠르게 탐색할 수
 
 **GitHub**: [https://github.com/wonsungso/msbuildsessionnavigator](https://github.com/wonsungso/msbuildsessionnavigator)
 
+![Screenshot](./imgs/screenshot.png)
+
 ## 주요 기능
 
 | 기능 | 설명 |
