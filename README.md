@@ -43,7 +43,8 @@ sudo bash run.sh
 ```
 
 - Python / pip / requests 설치 여부를 자동 확인하고 필요 시 설치합니다.
-- 서버가 `http://localhost` 에서 기동됩니다. (80 포트는 특권 포트이므로 `sudo` 필요)
+- SSL 인증서가 있으면 `https://msbuild.wonsungso.shop` (443), 없으면 HTTP(80)으로 기동됩니다.
+- HTTP(80)로 접속하면 자동으로 HTTPS(443)로 리다이렉트됩니다.
 - 백그라운드 스레드가 24시간마다 세션 데이터와 한국어 번역을 갱신합니다.
 - PID 파일(`.server.pid`)로 중복 실행을 방지합니다.
 
@@ -62,7 +63,30 @@ sudo bash restart.sh
 ### 브라우저에서 열기
 
 ```
-http://localhost
+https://msbuild.wonsungso.shop
+```
+
+### SSL 인증서 설치 (Let's Encrypt)
+
+서버에서 아래 명령을 한 번만 실행하면 무료 SSL 인증서를 발급받습니다:
+
+```bash
+# certbot 설치
+sudo apt install certbot -y
+
+# 인증서 발급 (standalone 모드 — 서버 실행 중지 후 실행)
+sudo bash stop.sh
+sudo certbot certonly --standalone -d msbuild.wonsungso.shop
+
+# 서버 재시작
+sudo bash run.sh
+```
+
+인증서는 90일마다 갱신이 필요합니다. 자동 갱신을 원하면 cron에 등록하세요:
+
+```bash
+# crontab -e 에 아래 줄 추가 (매일 새볽 3시 갱신 확인)
+0 3 * * * certbot renew --quiet && bash /path/to/restart.sh
 ```
 
 ## 파일 구조

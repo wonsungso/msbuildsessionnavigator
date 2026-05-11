@@ -7,7 +7,7 @@ PID_FILE="$SCRIPT_DIR/.server.pid"
 
 if [[ ! -f "$PID_FILE" ]]; then
   # PID 파일 없으면 포트로 직접 탐색
-  PID=$(lsof -ti tcp:80 2>/dev/null || true)
+  PID=$(lsof -ti tcp:443 2>/dev/null || lsof -ti tcp:80 2>/dev/null || true)
   if [[ -z "$PID" ]]; then
     echo "ℹ  실행 중인 서버가 없습니다"
     exit 0

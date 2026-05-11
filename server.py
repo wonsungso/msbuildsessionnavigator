@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 MS Build 2026 Session Navigator – Auto-updating HTTP Server
- - http://localhost 에서 파일 서빙
+ - https://msbuild.wonsungso.shop 에서 파일 서빙 (HTTPS)
+ - HTTP(80) 접속은 HTTPS(443)으로 자동 리다이렉트
  - 백그라운드에서 24시간마다 sessions.json 자동 갱신
  - 갱신 시 sessions_kr.json (한국어 번역) 자동 생성/업데이트
 """
@@ -12,6 +13,7 @@ import time
 import json
 import os
 import sys
+import ssl
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
@@ -234,12 +236,42 @@ if __name__ == "__main__":
     t = threading.Thread(target=background_updater, daemon=True)
     t.start()
 
-    # HTTP 서버 시작
+    # SSL 컨텍스트 설정
+    ssl_available = Path(SSL_CERT).exists() and Path(SSL_KEY).exists()
+    if ssl_available:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(SSL_CERT, SSL_KEY)
+    else:
+        print(f"[WARNING] SSL 인증서를 찾을 수 없습니다: {SSL_CERT}")
+        print("[WARNING] HTTP 모드로 기동합니다. certbot으로 인증서를 설치하세요.")
+
+    # HTTP → HTTPS 리다이렉트 서버 (80포트)
+    class RedirectHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(301)
+            self.send_header('Location', f'https://{DOMAIN}{self.path}')
+            self.end_headers()
+        def do_HEAD(self):
+            self.do_GET()
+        def log_message(self, fmt, *args):
+            pass
+
+    if ssl_available:
+        socketserver.TCPServer.allow_reuse_address = True
+        redirect_server = socketserver.TCPServer(("0.0.0.0", HTTP_PORT), RedirectHandler)
+        rt = threading.Thread(target=redirect_server.serve_forever, daemon=True)
+        rt.start()
+
+    # HTTPS 서버 시작
+    actual_port = PORT if ssl_available else HTTP_PORT
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", PORT), QuietHandler) as httpd:
+    with socketserver.TCPServer(("0.0.0.0", actual_port), QuietHandler) as httpd:
+        if ssl_available:
+            httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+        proto = "https" if ssl_available else "http"
         print(f"\n{'='*50}")
         print(f"  MS Build 2026 Session Navigator")
-        print(f"  http://localhost:{PORT}")
+        print(f"  {proto}://{DOMAIN}")
         print(f"  세션 데이터: 24시간마다 자동 갱신")
         print(f"{'='*50}\n")
         try:
