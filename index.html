@@ -381,7 +381,7 @@
     ::-webkit-scrollbar-thumb { background: #d0cece; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #b0aeac; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -1242,7 +1242,8 @@ function arr(x) { return Array.isArray(x) ? x : []; }
 function esc(s) {
   return String(s||'')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
 /* ═══════════════════════════════════════════════════════════════════

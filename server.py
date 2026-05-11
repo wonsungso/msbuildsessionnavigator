@@ -207,6 +207,20 @@ def background_updater():
 # ── HTTP 서버 ──────────────────────────────────────────────────────
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     """정적 파일 서빙 (액세스 로그 간소화)"""
+    def end_headers(self):
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+        self.send_header(
+            'Content-Security-Policy',
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+            "connect-src 'self' https://translate.googleapis.com; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'"
+        )
+        super().end_headers()
+
     def log_message(self, fmt, *args):
         # 에러만 출력
         if args and str(args[1]) >= "400":
@@ -221,8 +235,8 @@ if __name__ == "__main__":
     t.start()
 
     # HTTP 서버 시작
-    with socketserver.TCPServer(("", PORT), QuietHandler) as httpd:
-        httpd.allow_reuse_address = True
+    socketserver.TCPServer.allow_reuse_address = True
+    with socketserver.TCPServer(("127.0.0.1", PORT), QuietHandler) as httpd:
         print(f"\n{'='*50}")
         print(f"  MS Build 2026 Session Navigator")
         print(f"  http://localhost:{PORT}")
