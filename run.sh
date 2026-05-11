@@ -99,13 +99,22 @@ echo "✔  $("$PYTHON" --version 2>&1)"
 if [[ ! -d "$VENV_DIR" ]]; then
   echo "🔧  가상환경 생성 중 (.venv)..."
 
-  # python3-venv 모듈이 없는 Debian/Ubuntu 계열 대응
-  if ! "$PYTHON" -m venv --help &>/dev/null 2>&1; then
-    echo "   [apt] python3-venv 설치 중..."
-    sudo apt-get install -y python3-venv python3-full 2>/dev/null || true
+  # Debian/Ubuntu: 해당 Python 버전의 venv 패키지 사전 설치
+  if command -v apt-get &>/dev/null; then
+    PY_VER_NUM=$("$PYTHON" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    echo "   [apt] python${PY_VER_NUM}-venv 설치 중..."
+    sudo apt-get install -y "python${PY_VER_NUM}-venv" python3-venv python3-full 2>/dev/null || true
   fi
 
-  "$PYTHON" -m venv "$VENV_DIR"
+  # venv 생성, 실패 시 --without-pip 으로 재시도 후 pip 수동 설치
+  if ! "$PYTHON" -m venv "$VENV_DIR" 2>/dev/null; then
+    echo "   --without-pip 으로 재시도 후 pip 수동 설치..."
+    "$PYTHON" -m venv --without-pip "$VENV_DIR"
+    _TMP_PY="$VENV_DIR/bin/python"
+    [[ ! -f "$_TMP_PY" ]] && _TMP_PY="$VENV_DIR/Scripts/python.exe"
+    curl -fsSL https://bootstrap.pypa.io/get-pip.py | "$_TMP_PY"
+  fi
+
   echo "✔  가상환경 생성 완료"
 fi
 
