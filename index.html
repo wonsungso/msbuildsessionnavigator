@@ -375,6 +375,32 @@
       .grid { grid-template-columns: 1fr; }
     }
 
+    @media (max-width: 600px) {
+      /* 헤더 */
+      .hdr { padding: 0 12px; }
+      .hdr-logo { font-size: 15px; }
+      .hdr-logo .ms-icon { width: 22px; height: 22px; }
+      .hdr-sub { display: none; }          /* "Session Navigator" 텍스트 숨김 */
+      .hdr-count { display: none; }        /* 세션 수 숨김 (배너에 표시됨) */
+      .hdr-right { gap: 8px; }
+      .btn-export { padding: 5px 10px; font-size: 11px; }
+      .lang-btn { padding: 4px 8px; }
+      .lang-btn#btn-ko { font-size: 11px; }
+
+      /* 배너 */
+      .evt-banner { padding: 0 12px; height: auto; min-height: var(--banner-h); flex-wrap: wrap; gap: 8px; justify-content: center; }
+      .evt-left { gap: 8px; }
+      .evt-date { font-size: 11px; }
+      .evt-reg { padding: 5px 12px; font-size: 11px; }
+      .cd-num { font-size: 16px; }
+      .cd-unit { min-width: 38px; padding: 4px 3px 3px; }
+    }
+
+    @media (max-width: 400px) {
+      .hdr-logo span { display: none; }   /* 로고 텍스트 숨기고 아이콘만 */
+      .btn-export { display: none; }      /* Export 버튼 숨김 */
+    }
+
     /* ─── Scrollbar polish ───────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
