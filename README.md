@@ -43,7 +43,7 @@ sudo bash run.sh
 ```
 
 - Python / pip / requests 설치 여부를 자동 확인하고 필요 시 설치합니다.
-- SSL 인증서가 있으면 `https://msbuild.wonsungso.shop` (443), 없으면 HTTP(80)으로 기동됩니다.
+- SSL 인증서가 있으면 HTTPS(443), 없으면 HTTP(80)으로 기동됩니다.
 - HTTP(80)로 접속하면 자동으로 HTTPS(443)로 리다이렉트됩니다.
 - 백그라운드 스레드가 24시간마다 세션 데이터와 한국어 번역을 갱신합니다.
 - PID 파일(`.server.pid`)로 중복 실행을 방지합니다.
@@ -63,7 +63,8 @@ sudo bash restart.sh
 ### 브라우저에서 열기
 
 ```
-https://msbuild.wonsungso.shop
+https://<your-domain>   # SSL 인증서 적용 시
+http://localhost        # 로컈 테스트 시
 ```
 
 ### SSL 인증서 설치 (Let's Encrypt)
@@ -71,14 +72,16 @@ https://msbuild.wonsungso.shop
 서버에서 아래 명령을 한 번만 실행하면 무료 SSL 인증서를 발급받습니다:
 
 ```bash
-# certbot 설치
-sudo apt install certbot -y
+# certbot 설치 (snap)
+sudo snap install core && sudo snap refresh core
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/local/bin/certbot
 
 # 인증서 발급 (standalone 모드 — 서버 실행 중지 후 실행)
 sudo bash stop.sh
-sudo certbot certonly --standalone -d msbuild.wonsungso.shop
+sudo certbot certonly --standalone -d <your-domain>
 
-# 서버 재시작
+# server.py의 SSL_CERT / SSL_KEY 경로를 도메인에 맞게 수정 후 재시작
 sudo bash run.sh
 ```
 

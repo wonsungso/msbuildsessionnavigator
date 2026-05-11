@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 MS Build 2026 Session Navigator – Auto-updating HTTP Server
- - https://msbuild.wonsungso.shop 에서 파일 서빙 (HTTPS)
- - HTTP(80) 접속은 HTTPS(443)으로 자동 리다이렉트
+ - HTTPS(443) 또는 HTTP(80)으로 파일 서빙
+ - SSL 인증서가 있으면 HTTPS, 없으면 HTTP 자동 폴백
  - 백그라운드에서 24시간마다 sessions.json 자동 갱신
  - 갱신 시 sessions_kr.json (한국어 번역) 자동 생성/업데이트
 """
@@ -248,8 +248,9 @@ if __name__ == "__main__":
     # HTTP → HTTPS 리다이렉트 서버 (80포트)
     class RedirectHandler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
+            host = self.headers.get('Host', 'localhost')
             self.send_response(301)
-            self.send_header('Location', f'https://{DOMAIN}{self.path}')
+            self.send_header('Location', f'https://{host}{self.path}')
             self.end_headers()
         def do_HEAD(self):
             self.do_GET()
@@ -269,9 +270,10 @@ if __name__ == "__main__":
         if ssl_available:
             httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         proto = "https" if ssl_available else "http"
+        host = "localhost" if not ssl_available else "<your-domain>"
         print(f"\n{'='*50}")
         print(f"  MS Build 2026 Session Navigator")
-        print(f"  {proto}://{DOMAIN}")
+        print(f"  {proto}://{host}")
         print(f"  세션 데이터: 24시간마다 자동 갱신")
         print(f"{'='*50}\n")
         try:
