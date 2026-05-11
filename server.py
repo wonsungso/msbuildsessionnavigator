@@ -19,7 +19,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # ── 설정 ──────────────────────────────────────────────────────────
-PORT         = 80
+PORT         = 443
+HTTP_PORT    = 80
+SSL_CERT     = "/etc/letsencrypt/live/msbuild.wonsungso.shop/fullchain.pem"
+SSL_KEY      = "/etc/letsencrypt/live/msbuild.wonsungso.shop/privkey.pem"
 BASE_DIR     = Path(__file__).parent
 SESSIONS_URL = "https://api-v2.build.microsoft.com/api/session/all"
 KR_FILE      = BASE_DIR / "source" / "sessions_kr.json"
