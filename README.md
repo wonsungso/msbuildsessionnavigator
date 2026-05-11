@@ -2,6 +2,8 @@
 
 Microsoft Build 2026 세션 카탈로그를 로컬에서 빠르게 탐색할 수 있는 Single-Page Application입니다.
 
+**GitHub**: [https://github.com/wonsungso/msbuildsessionnavigator](https://github.com/wonsungso/msbuildsessionnavigator)
+
 ![screenshot](imgs/microsoft_icon.png)
 
 ## 주요 기능
@@ -26,6 +28,13 @@ Microsoft Build 2026 세션 카탈로그를 로컬에서 빠르게 탐색할 수
 - **Python 3.8+** (없으면 `run.sh`가 자동 설치 시도)
 - `requests` 패키지 (없으면 `run.sh`가 자동 설치)
 - Bash 환경 (macOS / Linux / Windows Git Bash / WSL)
+
+### 소스 받기
+
+```bash
+git clone https://github.com/wonsungso/msbuildsessionnavigator.git
+cd msbuildsessionnavigator
+```
 
 ### 서버 실행
 
