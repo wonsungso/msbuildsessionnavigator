@@ -172,12 +172,6 @@ echo "✅  서버 기동됨 (PID $PID) – 포트 응답 대기 중"
 echo "   http://localhost:$PORT"
 echo "   로그: $LOG_FILE"
 
-
-# ─────────────────────────────────────────────────────────────────
-# 1. Python 3.8+ 탐색
-# ─────────────────────────────────────────────────────────────────
-PYTHON=""
-for cmd in python3 python python3.13 python3.12 python3.11 python3.10 python3.9 python3.8; do
   if command -v "$cmd" &>/dev/null; then
     if "$cmd" -c "import sys; exit(0 if sys.version_info >= (3,8) else 1)" 2>/dev/null; then
       PYTHON="$cmd"
