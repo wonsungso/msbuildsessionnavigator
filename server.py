@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 MS Build 2026 Session Navigator – Auto-updating HTTP Server
- - http://localhost:5500 에서 파일 서빙
+ - http://localhost 에서 파일 서빙
  - 백그라운드에서 24시간마다 sessions.json 자동 갱신
  - 갱신 시 sessions_kr.json (한국어 번역) 자동 생성/업데이트
 """
@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # ── 설정 ──────────────────────────────────────────────────────────
-PORT         = 5500
+PORT         = 80
 BASE_DIR     = Path(__file__).parent
 SESSIONS_URL = "https://api-v2.build.microsoft.com/api/session/all"
 KR_FILE      = BASE_DIR / "source" / "sessions_kr.json"

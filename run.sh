@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PID_FILE="$SCRIPT_DIR/.server.pid"
 LOG_FILE="$SCRIPT_DIR/.server.log"
 VENV_DIR="$SCRIPT_DIR/.venv"
-PORT=5500
+PORT=80
 
 # ─────────────────────────────────────────────────────────────────
 # 1. Python 3.8+ 탐색
