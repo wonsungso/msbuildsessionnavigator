@@ -1008,9 +1008,11 @@ function renderInfo() {
     const fmt = d.toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US',
       { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const ageH = Math.floor((Date.now() - d.getTime()) / 3600000);
-    const stale = ageH >= 24;
+    const ageD = Math.floor(ageH / 24);
+    const stale = ageH >= 168; // 7일
+    const ageLabel = ageH < 24 ? `${ageH}h` : `${ageD}d`;
     el.innerHTML = stale
-      ? `<span style="color:var(--orange)" title="server.py를 실행하여 갱신하세요">⚠ ${lang==='ko'?'번역 데이터가 오래되었습니다':'Translation data is stale'} (${ageH}h)</span>`
+      ? `<span style="color:var(--orange)" title="서버가 자동으로 갱신합니다 (7일 주기)">⚠ ${lang==='ko'?'번역 데이터가 오래되었습니다':'Translation data is stale'} (${ageLabel})</span>`
       : `<span title="${KR_LAST_UPDATED}">${lang==='ko'?'번역 기준':'Translated'}: ${fmt}</span>`;
   }
 }
