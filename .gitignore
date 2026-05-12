@@ -3,3 +3,5 @@
 .server.log
 __pycache__/
 *.pyc
+sessions.json
+sessions_kr.json
