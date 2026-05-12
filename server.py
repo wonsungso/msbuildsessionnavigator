@@ -25,11 +25,12 @@ SSL_CERT     = "/etc/letsencrypt/live/msbuild.wonsungso.shop/fullchain.pem"
 SSL_KEY      = "/etc/letsencrypt/live/msbuild.wonsungso.shop/privkey.pem"
 BASE_DIR     = Path(__file__).parent
 SESSIONS_URL = "https://api-v2.build.microsoft.com/api/session/all"
+FETCH_TIMEOUT = 30    # 외부 API 요청 타임아웃 (초)
 KR_FILE      = BASE_DIR / "source" / "sessions_kr.json"
 SJ_FILE      = BASE_DIR / "source" / "sessions.json"
 (BASE_DIR / "source").mkdir(exist_ok=True)   # source/ 폴더 자동 생성
-MAX_AGE_SEC  = 86400   # 24시간
-CHECK_EVERY  = 3600    # 1시간마다 갱신 여부 확인
+MAX_AGE_SEC  = 604800  # 7일
+CHECK_EVERY  = 86400   # 24시간마다 갱신 여부 확인
 XLATE_DELAY  = 0.25    # 번역 요청 간격 (초)
 CHUNK_SIZE   = 900     # Google Translate 최대 문자수
 
@@ -73,7 +74,7 @@ def translate_text(text: str, target: str = "ko") -> str:
 # ── 세션 데이터 취득 ───────────────────────────────────────────────
 def fetch_sessions() -> list:
     print(f"[{_ts()}] API에서 세션 데이터 취득 중...")
-    r = requests.get(SESSIONS_URL, timeout=30)
+    r = requests.get(SESSIONS_URL, timeout=FETCH_TIMEOUT)
     r.raise_for_status()
     data = r.json()
     if isinstance(data, list):
@@ -205,7 +206,7 @@ def background_updater():
     while True:
         time.sleep(CHECK_EVERY)
         if is_stale():
-            print(f"[{_ts()}] 24시간 경과 → 자동 업데이트 시작")
+            print(f"[{_ts()}] 7일 경과 → 자동 업데이트 시작")
             do_update()
 
 
@@ -261,15 +262,17 @@ if __name__ == "__main__":
             pass
 
     if ssl_available:
-        socketserver.TCPServer.allow_reuse_address = True
-        redirect_server = socketserver.TCPServer(("0.0.0.0", HTTP_PORT), RedirectHandler)
+        socketserver.ThreadingTCPServer.allow_reuse_address = True
+        redirect_server = socketserver.ThreadingTCPServer(("0.0.0.0", HTTP_PORT), RedirectHandler)
+        redirect_server.daemon_threads = True
         rt = threading.Thread(target=redirect_server.serve_forever, daemon=True)
         rt.start()
 
     # HTTPS 서버 시작
     actual_port = PORT if ssl_available else HTTP_PORT
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", actual_port), QuietHandler) as httpd:
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    with socketserver.ThreadingTCPServer(("0.0.0.0", actual_port), QuietHandler) as httpd:
+        httpd.daemon_threads = True
         if ssl_available:
             httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         proto = "https" if ssl_available else "http"
@@ -277,7 +280,7 @@ if __name__ == "__main__":
         print(f"\n{'='*50}")
         print(f"  MS Build 2026 Session Navigator")
         print(f"  {proto}://{host}")
-        print(f"  세션 데이터: 24시간마다 자동 갱신")
+        print(f"  세션 데이터: 7일마다 자동 갱신 (매일 갱신 여부 체크)")
         print(f"{'='*50}\n")
         try:
             httpd.serve_forever()
