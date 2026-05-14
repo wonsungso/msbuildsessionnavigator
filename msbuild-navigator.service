@@ -1,0 +1,18 @@
+[Unit]
+Description=MS Build 2026 Session Navigator
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+WorkingDirectory=/root/msbuildsessionnavigator
+ExecStart=/bin/bash /root/msbuildsessionnavigator/run.sh
+ExecStop=/bin/bash /root/msbuildsessionnavigator/stop.sh
+PIDFile=/root/msbuildsessionnavigator/.server.pid
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/root/msbuildsessionnavigator/.server.log
+StandardError=append:/root/msbuildsessionnavigator/.server.log
+
+[Install]
+WantedBy=multi-user.target
